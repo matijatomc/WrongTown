@@ -10,10 +10,12 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 moveDirection;
     private Rigidbody rb;
+    private Shooting shooting;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
+        shooting = GetComponent<Shooting>();
     }
 
     void Update()
@@ -29,6 +31,13 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Jump();
+        }
+
+        // Check for left mouse button click
+        if (Input.GetButtonDown("Fire1"))
+        {
+            // Call the Shoot() function from the Shooting script
+            shooting.Shoot();
         }
     }
 
