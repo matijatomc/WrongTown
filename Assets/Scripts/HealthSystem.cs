@@ -7,6 +7,7 @@ public class HealthSystem : MonoBehaviour
     public void TakeDamage(float dmgValue)
     {
         HP = HP - dmgValue;
+        Debug.Log(gameObject.name + " je primio štetu. Trenutni HP: " + HP);
         if (HP <= 0)
         {
             Death();

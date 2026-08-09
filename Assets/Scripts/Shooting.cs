@@ -19,16 +19,17 @@ public class Shooting : MonoBehaviour
         RaycastHit hit;
         if (Physics.Raycast(transform.position, shootDirection, out hit, shootRange))
         {
+            Debug.Log("Pogodio: " + hit.collider.gameObject.name + " | Tag: " + hit.collider.gameObject.tag);
+
             if (!hit.collider.gameObject.CompareTag("Character"))
             {
                 InstantiateDecal(hit.point, hit.normal, hit.transform);
             }
 
-            // Check if the hit object has a ShotController component
             ShotController shotController = hit.collider.gameObject.GetComponent<ShotController>();
+            Debug.Log("ShotController pronaðen: " + (shotController != null));
             if (shotController != null)
             {
-                // Call the Shot method of the ShotController
                 shotController.Shot();
             }
         }

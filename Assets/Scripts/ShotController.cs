@@ -4,6 +4,7 @@ public class ShotController : MonoBehaviour
 {
     public void Shot()
     {
+        Debug.Log(gameObject.name + " Shot() pozvan, tag je: " + gameObject.tag);
         if (gameObject.CompareTag("Character"))
         {
             TakeDamage();
