@@ -1,4 +1,5 @@
 using UnityEngine;
+using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
@@ -12,10 +13,14 @@ public class PlayerController : MonoBehaviour
     public float interactionRange = 3f;
     public Transform interactionOrigin;
     public LayerMask interactionLayer;
+    public TextMeshProUGUI interactionText;
+
+    private MotorPart currentMotorPart;
 
     private Vector3 moveDirection;
     private Rigidbody rb;
     private Shooting shooting;
+
 
     private void Start()
     {
@@ -49,6 +54,8 @@ public class PlayerController : MonoBehaviour
         {
             TryInteract();
         }
+
+        UpdateInteractionPrompt();
     }
 
     void FixedUpdate()
@@ -98,11 +105,16 @@ public class PlayerController : MonoBehaviour
 
     private void TryInteract()
     {
-        if (interactionOrigin == null)
+        if (currentMotorPart != null)
         {
-            Debug.LogWarning("Interaction Origin is not assigned!");
-            return;
+            currentMotorPart.Collect();
         }
+    }
+
+    private void UpdateInteractionPrompt()
+    {
+        if (interactionOrigin == null || interactionText == null)
+            return;
 
         Ray ray = new Ray(
             interactionOrigin.position,
@@ -119,9 +131,17 @@ public class PlayerController : MonoBehaviour
 
             if (motorPart != null)
             {
-                motorPart.Collect();
+                currentMotorPart = motorPart;
+
+                interactionText.text = "[E] Pick up " + motorPart.partName;
+                interactionText.gameObject.SetActive(true);
+
+                return;
             }
         }
+
+        currentMotorPart = null;
+        interactionText.gameObject.SetActive(false);
     }
 
     // Draw the raycasts for visualization
