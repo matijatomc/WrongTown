@@ -801,12 +801,12 @@ GameObject:
   m_Component:
   - component: {fileID: 4388283360292389533}
   - component: {fileID: 4388283360292389534}
-  - component: {fileID: 4388283360292389532}
   - component: {fileID: 4388283360292389535}
   - component: {fileID: 4388283360292389536}
   - component: {fileID: 4388283360292389537}
+  - component: {fileID: 2631819185102039702}
   m_Layer: 0
-  m_Name: COWBOYS
+  m_Name: COWBOY
   m_TagString: Character
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -846,20 +846,6 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
---- !u!136 &4388283360292389532
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4388283360292389538}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4388283360292389535
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -907,6 +893,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e30eef9fe6cd69445aafe0b0e8b34ca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!136 &2631819185102039702
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4388283360292389538}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  m_Radius: 0.78310394
+  m_Height: 2.909649
+  m_Direction: 1
+  m_Center: {x: 0.021125793, y: -0.0069332123, z: 0.03276062}
 --- !u!1 &4388283360431024129
 GameObject:
   m_ObjectHideFlags: 0

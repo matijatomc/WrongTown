@@ -10,6 +10,7 @@ public class EnemyController : MonoBehaviour
     [Header("Detection")]
     public float detectionRange = 15f;
     public float shootRange = 10f;
+    private Animator animator;
 
     [Header("Movement")]
     public float moveSpeed = 4f;
@@ -28,6 +29,7 @@ public class EnemyController : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        animator = GetComponentInChildren<Animator>();
 
         if (player == null)
         {
@@ -43,7 +45,7 @@ public class EnemyController : MonoBehaviour
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         bool canSeePlayer = distanceToPlayer <= detectionRange && HasLineOfSight();
 
-        //Debug.Log("Udaljenost: " + distanceToPlayer.ToString("F1") + " | Vidi igraèa: " + canSeePlayer + " | State: " + currentState);
+        //Debug.Log("Udaljenost: " + distanceToPlayer.ToString("F1") + " | Vidi igraï¿½a: " + canSeePlayer + " | State: " + currentState);
 
         if (!canSeePlayer)
         {
@@ -52,10 +54,12 @@ public class EnemyController : MonoBehaviour
         else if (distanceToPlayer > shootRange)
         {
             currentState = State.Chasing;
+            animator.SetTrigger("SpottedPlayer"); 
         }
         else
         {
             currentState = State.Shooting;
+            animator.SetTrigger("SpottedPlayer"); 
         }
 
         if (fireCooldown > 0f)
