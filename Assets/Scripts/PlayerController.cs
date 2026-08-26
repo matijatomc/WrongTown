@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     public float rotateSpeed = 8f;
     public LayerMask groundLayerMask;
     public float jumpForce = 10f;
+    private bool wasMoving = false;
 
     [Header("Interaction")]
     public float interactionRange = 3f;
@@ -54,6 +55,20 @@ public class PlayerController : MonoBehaviour
         cameraRight.Normalize();
 
         moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
+        
+        bool isMoving = moveDirection.sqrMagnitude > 0.01f;
+
+        if (isMoving && !wasMoving)
+        {
+            animator.SetTrigger("IsWalking");
+            Debug.Log("IsWalking trigered!");
+        }
+        else if (!isMoving && wasMoving)
+        {
+            animator.SetTrigger("IsStanding");
+        }
+
+        wasMoving = isMoving;
 
         // Check for jump input
         if (Input.GetKeyDown(KeyCode.Space))

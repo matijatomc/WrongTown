@@ -41,8 +41,6 @@ public class PauseMenu : MonoBehaviour
 
         Time.timeScale = 1f;
         isPaused = false;
-
-        Cursor.visible = false;
     }
 
     public void PauseGame()
