@@ -20,6 +20,11 @@ public class EnemyController : MonoBehaviour
     public float damage = 10f;
     public float shootRayHeight = 1f;
 
+    [Header("Audio")]
+    public AudioClip shootSound;
+    public AudioSource audioSource;
+    [Range(0f, 1f)] public float shootVolume = 1f;
+
     private Rigidbody rb;
     private float fireCooldown;
 
@@ -44,8 +49,6 @@ public class EnemyController : MonoBehaviour
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         bool canSeePlayer = distanceToPlayer <= detectionRange && HasLineOfSight();
-
-        //Debug.Log("Udaljenost: " + distanceToPlayer.ToString("F1") + " | Vidi igra�a: " + canSeePlayer + " | State: " + currentState);
 
         if (!canSeePlayer)
         {
@@ -73,6 +76,7 @@ public class EnemyController : MonoBehaviour
                 Debug.Log("Enemy puca!");
                 Shoot();
                 fireCooldown = fireRate;
+                audioSource.PlayOneShot(shootSound, shootVolume);
             }
         }
     }
