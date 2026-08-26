@@ -31,6 +31,13 @@ public class MotorPartsUI : MonoBehaviour
 
     private void UpdateText(int collected, int total)
     {
-        motorPartsText.text = "MOTOR PARTS: " + collected + " / " + total;
+        if (collected >= total)
+        {
+            motorPartsText.text = "MOTOR PARTS COLLECTED!\nFind the motorcycle";
+        }
+        else
+        {
+            motorPartsText.text = "MOTOR PARTS: " + collected + " / " + total;
+        }
     }
 }
