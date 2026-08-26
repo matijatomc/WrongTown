@@ -22,11 +22,19 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     private Shooting shooting;
 
+    [Header("Audio")]
+    public AudioClip shootSound;
+    public AudioSource audioSource;
+    [Range(0f, 1f)] public float shootVolume = 1f;
+
+    private Animator animator;
+
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         shooting = GetComponent<Shooting>();
+        animator = GetComponentInChildren<Animator>();
     }
 
     void Update()
@@ -57,6 +65,8 @@ public class PlayerController : MonoBehaviour
         if (Input.GetButtonDown("Fire1"))
         {
             shooting.Shoot();
+            animator.SetTrigger("IsShooting");
+            audioSource.PlayOneShot(shootSound, shootVolume);
         }
 
         // Check for interaction input
