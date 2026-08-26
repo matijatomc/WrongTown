@@ -5,17 +5,18 @@ public class PlayerController : MonoBehaviour
 {
     public float moveSpeed = 20f;
     public Transform crosshair;
+    public Transform mainCamera;
     public float rotateSpeed = 8f;
     public LayerMask groundLayerMask;
     public float jumpForce = 10f;
 
     [Header("Interaction")]
     public float interactionRange = 3f;
-    public Transform interactionOrigin;
     public LayerMask interactionLayer;
     public TextMeshProUGUI interactionText;
 
     private MotorPart currentMotorPart;
+    private Motorcycle currentMotorcycle;
 
     private Vector3 moveDirection;
     private Rigidbody rb;
@@ -35,7 +36,16 @@ public class PlayerController : MonoBehaviour
         float verticalInput = Input.GetAxisRaw("Vertical");
 
         // Calculate movement direction
-        moveDirection = new Vector3(horizontalInput, 0f, verticalInput).normalized;
+        Vector3 cameraForward = mainCamera.forward;
+        Vector3 cameraRight = mainCamera.right;
+
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+
+        moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
 
         // Check for jump input
         if (Input.GetKeyDown(KeyCode.Space))
@@ -108,40 +118,101 @@ public class PlayerController : MonoBehaviour
         if (currentMotorPart != null)
         {
             currentMotorPart.Collect();
+            return;
+        }
+
+        if (currentMotorcycle != null)
+        {
+            currentMotorcycle.Ride();
         }
     }
 
     private void UpdateInteractionPrompt()
     {
-        if (interactionOrigin == null || interactionText == null)
+        if (interactionText == null)
             return;
 
-        Ray ray = new Ray(
-            interactionOrigin.position,
-            interactionOrigin.forward
+        Collider[] nearbyColliders = Physics.OverlapSphere(
+            transform.position,
+            interactionRange,
+            interactionLayer
         );
 
-        if (Physics.Raycast(
-            ray,
-            out RaycastHit hit,
-            interactionRange,
-            interactionLayer))
+        MotorPart closestPart = null;
+        Motorcycle closestMotorcycle = null;
+
+        float closestDistance = Mathf.Infinity;
+
+        foreach (Collider col in nearbyColliders)
         {
-            MotorPart motorPart = hit.collider.GetComponent<MotorPart>();
+            MotorPart motorPart = col.GetComponent<MotorPart>();
+
+            if (motorPart == null)
+            {
+                motorPart = col.GetComponentInParent<MotorPart>();
+            }
 
             if (motorPart != null)
             {
-                currentMotorPart = motorPart;
+                float distance = Vector3.Distance(
+                    transform.position,
+                    motorPart.transform.position
+                );
 
-                interactionText.text = "[E] Pick up " + motorPart.partName;
-                interactionText.gameObject.SetActive(true);
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
 
-                return;
+                    closestPart = motorPart;
+                    closestMotorcycle = null;
+                }
+
+                continue;
+            }
+
+            Motorcycle motorcycle = col.GetComponent<Motorcycle>();
+
+            if (motorcycle == null)
+            {
+                motorcycle = col.GetComponentInParent<Motorcycle>();
+            }
+
+            if (motorcycle != null)
+            {
+                float distance = Vector3.Distance(
+                    transform.position,
+                    motorcycle.transform.position
+                );
+
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+
+                    closestMotorcycle = motorcycle;
+                    closestPart = null;
+                }
             }
         }
 
-        currentMotorPart = null;
-        interactionText.gameObject.SetActive(false);
+        currentMotorPart = closestPart;
+        currentMotorcycle = closestMotorcycle;
+
+        if (currentMotorPart != null)
+        {
+            interactionText.text =
+                "[E] Pick up " + currentMotorPart.partName;
+
+            interactionText.gameObject.SetActive(true);
+        }
+        else if (currentMotorcycle != null)
+        {
+            interactionText.text = "[E] Ride motorcycle";
+            interactionText.gameObject.SetActive(true);
+        }
+        else
+        {
+            interactionText.gameObject.SetActive(false);
+        }
     }
 
     // Draw the raycasts for visualization
@@ -159,13 +230,7 @@ public class PlayerController : MonoBehaviour
             Color.red
         );
 
-        if (interactionOrigin != null)
-        {
-            Debug.DrawRay(
-                interactionOrigin.position,
-                interactionOrigin.forward * interactionRange,
-                Color.yellow
-            );
-        }
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, interactionRange);
     }
 }

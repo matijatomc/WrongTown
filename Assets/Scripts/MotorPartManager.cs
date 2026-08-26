@@ -8,6 +8,9 @@ public class MotorPartManager : MonoBehaviour
     [Header("Motor Parts")]
     public int totalParts = 8;
 
+    [Header("Game Finish")]
+    public GameObject motorcycle;
+
     private int collectedParts = 0;
 
     public event Action<int, int> OnPartsChanged;
@@ -48,6 +51,11 @@ public class MotorPartManager : MonoBehaviour
     private void AllPartsCollected()
     {
         Debug.Log("All motor parts collected!");
+
+        if (motorcycle != null)
+        {
+            motorcycle.SetActive(true);
+        }
     }
 
     public int GetCollectedParts()

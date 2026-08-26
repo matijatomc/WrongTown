@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5498292629293184881}
   - component: {fileID: 5498292629293184880}
   - component: {fileID: 5498292629293184883}
+  - component: {fileID: 7583362128331406339}
   m_Layer: 8
   m_Name: MotorPart
   m_TagString: Untagged
@@ -111,3 +112,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   partName: Engine
+--- !u!54 &7583362128331406339
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5498292629293184882}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 1
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
