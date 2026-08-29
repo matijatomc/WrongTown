@@ -3,18 +3,23 @@ using TMPro;
 
 public class PlayerController : MonoBehaviour
 {
+    [Header("Movement")]
     public float moveSpeed = 20f;
-    public Transform crosshair;
     public Transform mainCamera;
     public float rotateSpeed = 8f;
     public LayerMask groundLayerMask;
     public float jumpForce = 10f;
-    private bool wasMoving = false;
 
     [Header("Interaction")]
     public float interactionRange = 3f;
     public LayerMask interactionLayer;
     public TextMeshProUGUI interactionText;
+
+    [Header("Audio")]
+    public AudioClip shootSound;
+    public AudioSource audioSource;
+    [Range(0f, 1f)]
+    public float shootVolume = 1f;
 
     private MotorPart currentMotorPart;
     private Motorcycle currentMotorcycle;
@@ -22,29 +27,53 @@ public class PlayerController : MonoBehaviour
     private Vector3 moveDirection;
     private Rigidbody rb;
     private Shooting shooting;
-
-    [Header("Audio")]
-    public AudioClip shootSound;
-    public AudioSource audioSource;
-    [Range(0f, 1f)] public float shootVolume = 1f;
-
     private Animator animator;
 
+    private bool wasMoving = false;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         shooting = GetComponent<Shooting>();
         animator = GetComponentInChildren<Animator>();
+
+        if (mainCamera == null && Camera.main != null)
+        {
+            mainCamera = Camera.main.transform;
+        }
+
+        if (interactionText != null)
+        {
+            interactionText.gameObject.SetActive(false);
+        }
     }
 
-    void Update()
+    private void Update()
     {
-        // Get input from the player
+        HandleMovementInput();
+        HandleAnimations();
+        HandleJump();
+        HandleShooting();
+        HandleInteraction();
+
+        UpdateInteractionPrompt();
+    }
+
+    private void FixedUpdate()
+    {
+        MovePlayer();
+        AssistWithSlopes();
+        RotatePlayerToCamera();
+    }
+
+    private void HandleMovementInput()
+    {
+        if (mainCamera == null)
+            return;
+
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         float verticalInput = Input.GetAxisRaw("Vertical");
 
-        // Calculate movement direction
         Vector3 cameraForward = mainCamera.forward;
         Vector3 cameraRight = mainCamera.right;
 
@@ -54,14 +83,21 @@ public class PlayerController : MonoBehaviour
         cameraForward.Normalize();
         cameraRight.Normalize();
 
-        moveDirection = (cameraForward * verticalInput + cameraRight * horizontalInput).normalized;
-        
+        moveDirection =
+            (cameraForward * verticalInput +
+             cameraRight * horizontalInput).normalized;
+    }
+
+    private void HandleAnimations()
+    {
+        if (animator == null)
+            return;
+
         bool isMoving = moveDirection.sqrMagnitude > 0.01f;
 
         if (isMoving && !wasMoving)
         {
             animator.SetTrigger("IsWalking");
-            Debug.Log("IsWalking trigered!");
         }
         else if (!isMoving && wasMoving)
         {
@@ -69,72 +105,116 @@ public class PlayerController : MonoBehaviour
         }
 
         wasMoving = isMoving;
+    }
 
-        // Check for jump input
+    private void HandleJump()
+    {
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Jump();
         }
+    }
 
-        // Check for left mouse button click
-        if (Input.GetButtonDown("Fire1"))
+    private void HandleShooting()
+    {
+        if (!Input.GetButtonDown("Fire1"))
+            return;
+
+        if (shooting != null)
         {
             shooting.Shoot();
-            animator.SetTrigger("IsShooting");
-            audioSource.PlayOneShot(shootSound, shootVolume);
         }
 
-        // Check for interaction input
+        if (animator != null)
+        {
+            animator.SetTrigger("IsShooting");
+        }
+
+        if (audioSource != null && shootSound != null)
+        {
+            audioSource.PlayOneShot(
+                shootSound,
+                shootVolume
+            );
+        }
+    }
+
+    private void HandleInteraction()
+    {
         if (Input.GetKeyDown(KeyCode.E))
         {
             TryInteract();
         }
-
-        UpdateInteractionPrompt();
     }
 
-    void FixedUpdate()
+    private void MovePlayer()
     {
-        // Update player position
-        rb.AddForce(moveDirection * moveSpeed);
+        if (rb == null)
+            return;
 
-        // Raycast forward to detect ground in front of the player's feet
+        rb.AddForce(
+            moveDirection * moveSpeed
+        );
+    }
+
+    private void AssistWithSlopes()
+    {
+        if (rb == null)
+            return;
+
         if (Physics.Raycast(
             transform.position - transform.up * 0.95f,
             transform.forward,
             1f,
             groundLayerMask))
         {
-            // Add upward force to help the player ascend
-            rb.AddForce(Vector3.up * moveSpeed * 0.4f);
-        }
-
-        // Rotate the player to face the crosshair
-        Vector3 lookDirection = crosshair.position - transform.position;
-        lookDirection.y = 0f;
-
-        if (lookDirection != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
-
-            transform.rotation = Quaternion.Lerp(
-                transform.rotation,
-                targetRotation,
-                Time.fixedDeltaTime * rotateSpeed
+            rb.AddForce(
+                Vector3.up * moveSpeed * 0.4f
             );
         }
     }
 
+    private void RotatePlayerToCamera()
+    {
+        if (mainCamera == null)
+            return;
+
+        Vector3 lookDirection =
+            mainCamera.forward;
+
+        lookDirection.y = 0f;
+
+        if (lookDirection.sqrMagnitude < 0.01f)
+            return;
+
+        Quaternion targetRotation =
+            Quaternion.LookRotation(
+                lookDirection
+            );
+
+        transform.rotation =
+            Quaternion.Lerp(
+                transform.rotation,
+                targetRotation,
+                Time.fixedDeltaTime * rotateSpeed
+            );
+    }
+
     private void Jump()
     {
-        // Raycast down to detect ground below the player
+        if (rb == null)
+            return;
+
         if (Physics.Raycast(
             transform.position - transform.up * 1f,
-            Vector3.down * 0.2f,
-            1f,
+            Vector3.down,
+            1.2f,
             groundLayerMask))
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            rb.AddForce(
+                Vector3.up * jumpForce,
+                ForceMode.Impulse
+            );
         }
     }
 
@@ -157,32 +237,37 @@ public class PlayerController : MonoBehaviour
         if (interactionText == null)
             return;
 
-        Collider[] nearbyColliders = Physics.OverlapSphere(
-            transform.position,
-            interactionRange,
-            interactionLayer
-        );
+        Collider[] nearbyColliders =
+            Physics.OverlapSphere(
+                transform.position,
+                interactionRange,
+                interactionLayer
+            );
 
         MotorPart closestPart = null;
         Motorcycle closestMotorcycle = null;
 
-        float closestDistance = Mathf.Infinity;
+        float closestDistance =
+            Mathf.Infinity;
 
         foreach (Collider col in nearbyColliders)
         {
-            MotorPart motorPart = col.GetComponent<MotorPart>();
+            MotorPart motorPart =
+                col.GetComponent<MotorPart>();
 
             if (motorPart == null)
             {
-                motorPart = col.GetComponentInParent<MotorPart>();
+                motorPart =
+                    col.GetComponentInParent<MotorPart>();
             }
 
             if (motorPart != null)
             {
-                float distance = Vector3.Distance(
-                    transform.position,
-                    motorPart.transform.position
-                );
+                float distance =
+                    Vector3.Distance(
+                        transform.position,
+                        motorPart.transform.position
+                    );
 
                 if (distance < closestDistance)
                 {
@@ -195,19 +280,22 @@ public class PlayerController : MonoBehaviour
                 continue;
             }
 
-            Motorcycle motorcycle = col.GetComponent<Motorcycle>();
+            Motorcycle motorcycle =
+                col.GetComponent<Motorcycle>();
 
             if (motorcycle == null)
             {
-                motorcycle = col.GetComponentInParent<Motorcycle>();
+                motorcycle =
+                    col.GetComponentInParent<Motorcycle>();
             }
 
             if (motorcycle != null)
             {
-                float distance = Vector3.Distance(
-                    transform.position,
-                    motorcycle.transform.position
-                );
+                float distance =
+                    Vector3.Distance(
+                        transform.position,
+                        motorcycle.transform.position
+                    );
 
                 if (distance < closestDistance)
                 {
@@ -225,13 +313,16 @@ public class PlayerController : MonoBehaviour
         if (currentMotorPart != null)
         {
             interactionText.text =
-                "[E] Pick up " + currentMotorPart.partName;
+                "[E] Pick up " +
+                currentMotorPart.partName;
 
             interactionText.gameObject.SetActive(true);
         }
         else if (currentMotorcycle != null)
         {
-            interactionText.text = "[E] Ride motorcycle";
+            interactionText.text =
+                "[E] Ride motorcycle";
+
             interactionText.gameObject.SetActive(true);
         }
         else
@@ -240,22 +331,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // Draw the raycasts for visualization
     private void OnDrawGizmos()
     {
         Debug.DrawRay(
-            transform.position - transform.up * 0.95f,
-            transform.forward * 1f,
+            transform.position -
+            transform.up * 0.95f,
+            transform.forward,
             Color.green
         );
 
         Debug.DrawRay(
-            transform.position - transform.up * 0.95f,
-            Vector3.down * 0.2f,
+            transform.position -
+            transform.up * 0.95f,
+            Vector3.down * 1.2f,
             Color.red
         );
 
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(transform.position, interactionRange);
+
+        Gizmos.DrawWireSphere(
+            transform.position,
+            interactionRange
+        );
     }
 }

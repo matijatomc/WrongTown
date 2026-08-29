@@ -3,80 +3,145 @@ using System.Collections.Generic;
 
 public class Shooting : MonoBehaviour
 {
-    public Transform crosshair;
+    [Header("References")]
+    public Camera mainCamera;
+    public Transform firePoint;
+
+    [Header("Shooting")]
     public float shootRange = 100f;
-    public GameObject decalPrefab; // Prefab for the bullet hole decal
-    public int maxDecals = 10; // Maximum number of decals allowed
+    public float damage = 25f;
+
+    [Header("Decals")]
+    public GameObject decalPrefab;
+    public int maxDecals = 10;
 
     private List<GameObject> instantiatedDecals = new List<GameObject>();
 
     public void Shoot()
     {
-        // Calculate the direction from the player to the crosshair
-        Vector3 shootDirection = crosshair.position - transform.position;
-
-        // Cast a ray in the shoot direction
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, shootDirection, out hit, shootRange))
+        if (mainCamera == null || firePoint == null)
         {
-            Debug.Log("Pogodio: " + hit.collider.gameObject.name + " | Tag: " + hit.collider.gameObject.tag);
+            Debug.LogWarning("Shooting references are missing!");
+            return;
+        }
 
-            if (!hit.collider.gameObject.CompareTag("Character"))
+        // Ray iz centra ekrana
+        Ray cameraRay = mainCamera.ViewportPointToRay(
+            new Vector3(0.5f, 0.5f, 0f)
+        );
+
+        Vector3 aimPoint;
+
+        // Prvo odredimo gdje crosshair cilja
+        if (Physics.Raycast(
+            cameraRay,
+            out RaycastHit cameraHit,
+            shootRange))
+        {
+            aimPoint = cameraHit.point;
+        }
+        else
+        {
+            aimPoint =
+                cameraRay.origin +
+                cameraRay.direction * shootRange;
+        }
+
+        // Metak ide iz cijevi prema aim pointu
+        Vector3 shootDirection =
+            (aimPoint - firePoint.position).normalized;
+
+        if (Physics.Raycast(
+            firePoint.position,
+            shootDirection,
+            out RaycastHit hit,
+            shootRange))
+        {
+            Debug.Log(
+                "Hit: " +
+                hit.collider.gameObject.name
+            );
+
+            // Tražimo HealthSystem i na parent objektu
+            HealthSystem healthSystem =
+                hit.collider.GetComponentInParent<HealthSystem>();
+
+            if (healthSystem != null &&
+                hit.collider.GetComponentInParent<EnemyController>() != null)
             {
-                InstantiateDecal(hit.point, hit.normal, hit.transform);
+                healthSystem.TakeDamage(damage);
             }
-
-            ShotController shotController = hit.collider.gameObject.GetComponent<ShotController>();
-            Debug.Log("ShotController pronaðen: " + (shotController != null));
-            if (shotController != null)
+            else
             {
-                shotController.Shot();
+                InstantiateDecal(
+                    hit.point,
+                    hit.normal,
+                    hit.transform
+                );
             }
         }
     }
 
-    void InstantiateDecal(Vector3 position, Vector3 normal, Transform hitTransform)
+    private void InstantiateDecal(
+        Vector3 position,
+        Vector3 normal,
+        Transform hitTransform)
     {
-        // Determine the rotation to align with the surface
-        Quaternion rotation = Quaternion.FromToRotation(Vector3.up, normal);
+        if (decalPrefab == null)
+            return;
 
-        // Instantiate the decal prefab
-        GameObject decal = Instantiate(decalPrefab, position, rotation);
+        Quaternion rotation =
+            Quaternion.FromToRotation(
+                Vector3.up,
+                normal
+            );
 
-        // Adjust the decal's position slightly to prevent z-fighting
-        decal.transform.position += normal * 0.01f;
+        GameObject decal =
+            Instantiate(
+                decalPrefab,
+                position,
+                rotation
+            );
 
-        // Parent the decal to the hit object to keep it in the correct position
-        decal.transform.parent = hitTransform;
+        decal.transform.position +=
+            normal * 0.01f;
 
-        // Add the decal to the list of instantiated decals
+        decal.transform.parent =
+            hitTransform;
+
         instantiatedDecals.Add(decal);
 
-        // Ensure that only the newest decals are kept
         RemoveOldDecals();
     }
 
-    void RemoveOldDecals()
+    private void RemoveOldDecals()
     {
-        // If the number of decals exceeds the maximum limit
-        if (instantiatedDecals.Count > maxDecals)
-        {
-            // Calculate the number of excess decals
-            int excessDecals = instantiatedDecals.Count - maxDecals;
+        if (instantiatedDecals.Count <= maxDecals)
+            return;
 
-            // Remove the oldest excess decals from the list and destroy them
-            for (int i = 0; i < excessDecals; i++)
-            {
-                GameObject decal = instantiatedDecals[0]; // Get the oldest decal
-                instantiatedDecals.RemoveAt(0); // Remove it from the list
-                Destroy(decal); // Destroy the GameObject
-            }
+        int excessDecals =
+            instantiatedDecals.Count - maxDecals;
+
+        for (int i = 0; i < excessDecals; i++)
+        {
+            GameObject decal =
+                instantiatedDecals[0];
+
+            instantiatedDecals.RemoveAt(0);
+
+            Destroy(decal);
         }
     }
 
-    // Draw the raycast for visualization
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
-        Debug.DrawRay(transform.position, (crosshair.position - transform.position) * shootRange, Color.red);
+        if (firePoint != null)
+        {
+            Debug.DrawRay(
+                firePoint.position,
+                firePoint.forward * 3f,
+                Color.red
+            );
+        }
     }
 }
