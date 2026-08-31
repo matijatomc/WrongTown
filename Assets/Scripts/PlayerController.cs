@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using TMPro;
 
@@ -21,6 +22,16 @@ public class PlayerController : MonoBehaviour
     [Range(0f, 1f)]
     public float shootVolume = 1f;
 
+    [Header("Shooting")]
+    [Tooltip("Koliko dugo su inputi zaključani nakon pucanja. " +
+             "Postavi na trajanje shoot animacije.")]
+    public float shootLockDuration = 0.5f;
+
+    [Tooltip("Ako je uključeno, duljina locka se čita iz animatora " +
+             "umjesto iz shootLockDuration. Radi samo ako je transition " +
+             "u shoot state trenutan (duration 0).")]
+    public bool useAnimationLength = false;
+
     private MotorPart currentMotorPart;
     private Motorcycle currentMotorcycle;
 
@@ -30,6 +41,8 @@ public class PlayerController : MonoBehaviour
     private Animator animator;
 
     private bool wasMoving = false;
+    private bool inputLocked = false;
+    private Coroutine shootLockRoutine;
 
     private void Start()
     {
@@ -50,6 +63,16 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (inputLocked)
+        {
+            // Nuliramo smjer da FixedUpdate ne dodaje silu.
+            moveDirection = Vector3.zero;
+
+            // Prompt i dalje osvježavamo da tekst ne ostane "zamrznut".
+            UpdateInteractionPrompt();
+            return;
+        }
+
         HandleMovementInput();
         HandleAnimations();
         HandleJump();
@@ -137,6 +160,8 @@ public class PlayerController : MonoBehaviour
                 shootVolume
             );
         }
+
+        StartShootLock();
     }
 
     private void HandleInteraction()
@@ -147,10 +172,79 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    // ---------- INPUT LOCK ----------
+
+    private void StartShootLock()
+    {
+        if (shootLockRoutine != null)
+        {
+            StopCoroutine(shootLockRoutine);
+        }
+
+        shootLockRoutine = StartCoroutine(ShootLockRoutine());
+    }
+
+    private IEnumerator ShootLockRoutine()
+    {
+        inputLocked = true;
+
+        float duration = shootLockDuration;
+
+        if (useAnimationLength && animator != null)
+        {
+            // Animator treba jedan frame da uđe u novi state.
+            yield return null;
+
+            duration =
+                animator.GetCurrentAnimatorStateInfo(0).length;
+        }
+
+        yield return new WaitForSeconds(duration);
+
+        UnlockInput();
+    }
+
+    /// <summary>
+    /// Pozovi ovo iz Animation Eventa na zadnjem frameu shoot klipa
+    /// ako želiš da lock završi točno s animacijom.
+    /// Napomena: animator je na child objektu, pa event traži metodu
+    /// na tom childu - treba ti mali relay skript (vidi dolje u komentaru).
+    /// </summary>
+    public void OnShootAnimationEnd()
+    {
+        if (shootLockRoutine != null)
+        {
+            StopCoroutine(shootLockRoutine);
+            shootLockRoutine = null;
+        }
+
+        UnlockInput();
+    }
+
+    private void UnlockInput()
+    {
+        inputLocked = false;
+        shootLockRoutine = null;
+
+        // Reset da se walk/stand trigger ispravno ponovno okine.
+        wasMoving = false;
+    }
+
+    // --------------------------------
+
     private void MovePlayer()
     {
         if (rb == null)
             return;
+
+        if (inputLocked)
+        {
+            // Zaustavi klizanje, ali pusti gravitaciju da radi.
+            // Unity 6: koristi rb.linearVelocity umjesto rb.velocity.
+            Vector3 velocity = rb.velocity;
+            rb.velocity = new Vector3(0f, velocity.y, 0f);
+            return;
+        }
 
         rb.AddForce(
             moveDirection * moveSpeed
@@ -160,6 +254,9 @@ public class PlayerController : MonoBehaviour
     private void AssistWithSlopes()
     {
         if (rb == null)
+            return;
+
+        if (inputLocked)
             return;
 
         if (Physics.Raycast(
@@ -178,6 +275,11 @@ public class PlayerController : MonoBehaviour
     {
         if (mainCamera == null)
             return;
+
+        // Ako želiš da se igrač NE okreće dok puca,
+        // odkomentiraj sljedeće dvije linije:
+        // if (inputLocked)
+        //     return;
 
         Vector3 lookDirection =
             mainCamera.forward;
@@ -355,3 +457,26 @@ public class PlayerController : MonoBehaviour
         );
     }
 }
+
+/*
+-------------------------------------------------------------------
+OPCIONALNO: Animation Event relay
+-------------------------------------------------------------------
+Stavi ovu skriptu na isti GameObject na kojem je Animator (child),
+poveži "player" referencu na PlayerController i u Animation prozoru
+dodaj event na zadnji frame shoot klipa koji zove ShootAnimationEnd().
+Zatim u Inspectoru isključi useAnimationLength i stavi
+shootLockDuration na neku veću vrijednost kao fallback.
+
+public class AnimationEventRelay : MonoBehaviour
+{
+    public PlayerController player;
+
+    public void ShootAnimationEnd()
+    {
+        if (player != null)
+            player.OnShootAnimationEnd();
+    }
+}
+-------------------------------------------------------------------
+*/

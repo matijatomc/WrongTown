@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class Shooting : MonoBehaviour
@@ -11,18 +12,63 @@ public class Shooting : MonoBehaviour
     public float shootRange = 100f;
     public float damage = 25f;
 
+    [Header("Timing")]
+    [Tooltip("Koliko sekundi nakon klika se metak stvarno ispali. " +
+             "Postavi na trenutak u animaciji kad lik nanišani.")]
+    public float shootDelay = 0.5f;
+
+    [Header("Audio")]
+    [Tooltip("Zvuk pucnja - sada se pušta ovdje da bude sinkroniziran " +
+             "s hitscanom. Ukloni shootSound iz PlayerControllera.")]
+    public AudioClip shootSound;
+    public AudioSource audioSource;
+    [Range(0f, 1f)]
+    public float shootVolume = 1f;
+
     [Header("Decals")]
     public GameObject decalPrefab;
     public int maxDecals = 10;
 
     private List<GameObject> instantiatedDecals = new List<GameObject>();
+    private Coroutine shootRoutine;
 
+    /// <summary>
+    /// Poziva se na klik. Ne puca odmah - pokreće odgodu.
+    /// </summary>
     public void Shoot()
+    {
+        if (shootRoutine != null)
+        {
+            StopCoroutine(shootRoutine);
+        }
+
+        shootRoutine = StartCoroutine(ShootAfterDelay());
+    }
+
+    private IEnumerator ShootAfterDelay()
+    {
+        yield return new WaitForSeconds(shootDelay);
+
+        FireShot();
+
+        shootRoutine = null;
+    }
+
+    /// <summary>
+    /// Stvarni hitscan. Pozovi ovo direktno iz Animation Eventa
+    /// ako želiš da bude vezano uz frame animacije umjesto uz timer.
+    /// </summary>
+    public void FireShot()
     {
         if (mainCamera == null || firePoint == null)
         {
             Debug.LogWarning("Shooting references are missing!");
             return;
+        }
+
+        if (audioSource != null && shootSound != null)
+        {
+            audioSource.PlayOneShot(shootSound, shootVolume);
         }
 
         // Ray iz centra ekrana
@@ -62,7 +108,7 @@ public class Shooting : MonoBehaviour
                 hit.collider.gameObject.name
             );
 
-            // Tra�imo HealthSystem i na parent objektu
+            // Tražimo HealthSystem i na parent objektu
             HealthSystem healthSystem =
                 hit.collider.GetComponentInParent<HealthSystem>();
 
@@ -129,7 +175,12 @@ public class Shooting : MonoBehaviour
 
             instantiatedDecals.RemoveAt(0);
 
-            Destroy(decal);
+            // Decal je mogao biti uništen zajedno s parentom
+            // (npr. enemy je umro), pa provjeravamo.
+            if (decal != null)
+            {
+                Destroy(decal);
+            }
         }
     }
 
