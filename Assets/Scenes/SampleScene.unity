@@ -40824,7 +40824,7 @@ Animator:
   m_GameObject: {fileID: 768198989}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: f03c218210cf4fd40966387bbae38fbf, type: 2}
+  m_Controller: {fileID: 9100000, guid: 081b3cf622327af479f54386eac8ce91, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -55189,6 +55189,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHP: 100
+  corpseLifetime: 3
 --- !u!114 &1046018213
 MonoBehaviour:
   m_ObjectHideFlags: 0

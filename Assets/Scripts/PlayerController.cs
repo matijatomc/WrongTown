@@ -23,13 +23,7 @@ public class PlayerController : MonoBehaviour
     public float shootVolume = 1f;
 
     [Header("Shooting")]
-    [Tooltip("Koliko dugo su inputi zaključani nakon pucanja. " +
-             "Postavi na trajanje shoot animacije.")]
     public float shootLockDuration = 0.5f;
-
-    [Tooltip("Ako je uključeno, duljina locka se čita iz animatora " +
-             "umjesto iz shootLockDuration. Radi samo ako je transition " +
-             "u shoot state trenutan (duration 0).")]
     public bool useAnimationLength = false;
 
     private MotorPart currentMotorPart;
@@ -457,26 +451,3 @@ public class PlayerController : MonoBehaviour
         );
     }
 }
-
-/*
--------------------------------------------------------------------
-OPCIONALNO: Animation Event relay
--------------------------------------------------------------------
-Stavi ovu skriptu na isti GameObject na kojem je Animator (child),
-poveži "player" referencu na PlayerController i u Animation prozoru
-dodaj event na zadnji frame shoot klipa koji zove ShootAnimationEnd().
-Zatim u Inspectoru isključi useAnimationLength i stavi
-shootLockDuration na neku veću vrijednost kao fallback.
-
-public class AnimationEventRelay : MonoBehaviour
-{
-    public PlayerController player;
-
-    public void ShootAnimationEnd()
-    {
-        if (player != null)
-            player.OnShootAnimationEnd();
-    }
-}
--------------------------------------------------------------------
-*/

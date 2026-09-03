@@ -25,11 +25,32 @@ public class EnemyController : MonoBehaviour
     public AudioSource audioSource;
     [Range(0f, 1f)] public float shootVolume = 1f;
 
+    [Header("Death")]
+    public bool disableCollidersOnDeath = true;
+
     private Rigidbody rb;
+    private HealthSystem health;
     private float fireCooldown;
 
-    private enum State { Idle, Chasing, Shooting }
+    private enum State { Idle, Chasing, Shooting, Dead }
     private State currentState = State.Idle;
+    private State previousState = State.Idle;
+
+    private bool isDead = false;
+
+    void Awake()
+    {
+        health = GetComponent<HealthSystem>();
+
+        if (health != null)
+            health.OnDeath += HandleDeath;
+    }
+
+    void OnDestroy()
+    {
+        if (health != null)
+            health.OnDeath -= HandleDeath;
+    }
 
     void Start()
     {
@@ -45,24 +66,26 @@ public class EnemyController : MonoBehaviour
 
     void Update()
     {
+        if (isDead) return;
         if (player == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         bool canSeePlayer = distanceToPlayer <= detectionRange && HasLineOfSight();
 
         if (!canSeePlayer)
-        {
             currentState = State.Idle;
-        }
         else if (distanceToPlayer > shootRange)
-        {
             currentState = State.Chasing;
-            animator.SetTrigger("SpottedPlayer"); 
-        }
         else
-        {
             currentState = State.Shooting;
-            animator.SetTrigger("SpottedPlayer"); 
+
+        // Trigger okidamo SAMO na promjeni stanja, ne svaki frame.
+        if (currentState != previousState)
+        {
+            if (currentState != State.Idle && animator != null)
+                animator.SetTrigger("SpottedPlayer");
+
+            previousState = currentState;
         }
 
         if (fireCooldown > 0f)
@@ -73,16 +96,19 @@ public class EnemyController : MonoBehaviour
             FaceTarget();
             if (fireCooldown <= 0f)
             {
-                Debug.Log("Enemy puca!");
                 Shoot();
                 fireCooldown = fireRate;
-                audioSource.PlayOneShot(shootSound, shootVolume);
+
+                if (audioSource != null && shootSound != null)
+                    audioSource.PlayOneShot(shootSound, shootVolume);
             }
         }
     }
 
     void FixedUpdate()
     {
+        if (isDead) return;
+
         if (currentState == State.Chasing && rb != null)
         {
             Vector3 direction = (player.position - transform.position);
@@ -96,6 +122,43 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    // ---------- DEATH ----------
+
+    private void HandleDeath()
+    {
+        if (isDead) return;
+
+        isDead = true;
+        currentState = State.Dead;
+
+        if (animator != null)
+        {
+            // Da ga SpottedPlayer ne izvuče natrag iz death statea.
+            animator.ResetTrigger("SpottedPlayer");
+            animator.SetTrigger("Dead");
+        }
+
+        // Zaustavi kretanje.
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.isKinematic = true;
+        }
+
+        // Da igrač ne puca u leš i da ga ne gura.
+        if (disableCollidersOnDeath)
+        {
+            foreach (Collider col in GetComponentsInChildren<Collider>())
+                col.enabled = false;
+        }
+
+        // Prestani izvršavati Update/FixedUpdate.
+        enabled = false;
+    }
+
+    // ---------------------------
+
     private bool HasLineOfSight()
     {
         Vector3 origin = transform.position + Vector3.up * shootRayHeight;
@@ -103,9 +166,8 @@ public class EnemyController : MonoBehaviour
         Vector3 dir = targetPoint - origin;
 
         if (Physics.Raycast(origin, dir.normalized, out RaycastHit hit, dir.magnitude, obstructionMask))
-        {
             return false;
-        }
+
         return true;
     }
 
@@ -130,9 +192,7 @@ public class EnemyController : MonoBehaviour
         {
             HealthSystem targetHealth = hit.collider.GetComponent<HealthSystem>();
             if (targetHealth != null)
-            {
                 targetHealth.TakeDamage(damage);
-            }
         }
     }
 

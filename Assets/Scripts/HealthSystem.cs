@@ -36,7 +36,7 @@ public class HealthSystem : MonoBehaviour
 
         Debug.Log(
             gameObject.name +
-            " je primio štetu. Trenutni HP: " +
+            " je primio ï¿½tetu. Trenutni HP: " +
             currentHP
         );
 
@@ -59,6 +59,8 @@ public class HealthSystem : MonoBehaviour
         OnHealthChanged?.Invoke(currentHP, maxHP);
     }
 
+    [Header("Death")]
+    public float corpseLifetime = 10f;   // vrijeme da se odigra death animacija
     private void Die()
     {
         if (isDead)
@@ -70,14 +72,11 @@ public class HealthSystem : MonoBehaviour
 
         OnDeath?.Invoke();
 
-        // Normal enemy
+        // Normal enemy - ne uniÅ¡tavamo odmah, pustimo animaciju.
         if (CompareTag("Character"))
         {
-            Destroy(gameObject);
+            Destroy(gameObject, corpseLifetime);
         }
-
-        // Player se NE uništava.
-        // PlayerDeath skripta æe prikazati death screen.
         else if (CompareTag("Player"))
         {
             Debug.Log("Player died - waiting for PlayerDeath.");
