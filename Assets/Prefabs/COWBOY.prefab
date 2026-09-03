@@ -711,7 +711,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &4388283360252654837
 Transform:
   m_ObjectHideFlags: 0
@@ -720,8 +720,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4388283360252654838}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.34, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0, y: 0.62, z: 0}
+  m_LocalScale: {x: 1, y: 1.5133, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4388283360292389533}
@@ -786,9 +786,9 @@ CapsuleCollider:
   m_GameObject: {fileID: 4388283360252654838}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
-  m_Enabled: 0
+  m_Enabled: 1
   m_Radius: 0.5
-  m_Height: 2
+  m_Height: 2.18
   m_Direction: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &4388283360292389538
@@ -804,7 +804,6 @@ GameObject:
   - component: {fileID: 4388283360292389535}
   - component: {fileID: 4388283360292389536}
   - component: {fileID: 4388283360292389537}
-  - component: {fileID: 2631819185102039702}
   - component: {fileID: 1176096717093898986}
   m_Layer: 0
   m_Name: COWBOY
@@ -859,6 +858,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   maxHP: 50
+  corpseLifetime: 10
 --- !u!114 &4388283360292389536
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -884,6 +884,7 @@ MonoBehaviour:
   shootSound: {fileID: 8300000, guid: 015327b78a320cb4ba5de2fd2402c9af, type: 3}
   audioSource: {fileID: 1176096717093898986}
   shootVolume: 1
+  disableCollidersOnDeath: 1
 --- !u!114 &4388283360292389537
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -896,20 +897,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e30eef9fe6cd69445aafe0b0e8b34ca0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!136 &2631819185102039702
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4388283360292389538}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  m_Radius: 0.5
-  m_Height: 3
-  m_Direction: 1
-  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!82 &1176096717093898986
 AudioSource:
   m_ObjectHideFlags: 0
