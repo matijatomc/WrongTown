@@ -6,7 +6,7 @@ public class MotorPartManager : MonoBehaviour
     public static MotorPartManager Instance;
 
     [Header("Motor Parts")]
-    public int totalParts = 8;
+    public int totalParts = 6;
 
     [Header("Game Finish")]
     public GameObject motorcycle;

@@ -15,6 +15,9 @@ public class PauseMenu : MonoBehaviour
         }
 
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void Update()
@@ -37,25 +40,38 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
-        pauseMenuUI.SetActive(false);
+        if (pauseMenuUI != null)
+        {
+            pauseMenuUI.SetActive(false);
+        }
 
         Time.timeScale = 1f;
         isPaused = false;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     public void PauseGame()
     {
-        pauseMenuUI.SetActive(true);
+        if (pauseMenuUI != null)
+        {
+            pauseMenuUI.SetActive(true);
+        }
 
         Time.timeScale = 0f;
         isPaused = true;
 
         Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     public void RestartGame()
     {
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         SceneManager.LoadScene(
             SceneManager.GetActiveScene().buildIndex
@@ -65,6 +81,9 @@ public class PauseMenu : MonoBehaviour
     public void LoadMainMenu()
     {
         Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
         SceneManager.LoadScene("MainMenu");
     }

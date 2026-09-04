@@ -15,8 +15,16 @@ public class ThirdPersonCamera : MonoBehaviour
     public float minPitch = -30f;
     public float maxPitch = 60f;
 
+    [Header("Camera Collision")]
+    public LayerMask collisionMask;
+    public float collisionRadius = 0.25f;
+    public float collisionPadding = 0.15f;
+    public float collisionSmoothSpeed = 12f;
+
     private float yaw;
     private float pitch;
+
+    private float currentDistance;
 
     private void Start()
     {
@@ -24,8 +32,11 @@ public class ThirdPersonCamera : MonoBehaviour
         Cursor.visible = false;
 
         Vector3 angles = transform.eulerAngles;
+
         yaw = angles.y;
         pitch = angles.x;
+
+        currentDistance = distance;
     }
 
     private void LateUpdate()
@@ -33,33 +44,121 @@ public class ThirdPersonCamera : MonoBehaviour
         if (Time.timeScale == 0f)
             return;
 
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        if (player == null)
+            return;
+
+        HandleRotation();
+        HandlePosition();
+    }
+
+    private void HandleRotation()
+    {
+        float mouseX =
+            Input.GetAxis("Mouse X") *
+            mouseSensitivity;
+
+        float mouseY =
+            Input.GetAxis("Mouse Y") *
+            mouseSensitivity;
 
         yaw += mouseX;
         pitch -= mouseY;
 
-        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
-
-        Quaternion rotation = Quaternion.Euler(
+        pitch = Mathf.Clamp(
             pitch,
-            yaw,
-            0f
+            minPitch,
+            maxPitch
         );
+    }
+
+    private void HandlePosition()
+    {
+        Quaternion rotation =
+            Quaternion.Euler(
+                pitch,
+                yaw,
+                0f
+            );
 
         Vector3 pivotPosition =
             player.position +
             Vector3.up * height;
 
-        Vector3 cameraOffset =
-            rotation * new Vector3(
+        Vector3 fullCameraOffset =
+            rotation *
+            new Vector3(
                 shoulderOffset,
                 0f,
                 -distance
             );
 
-        transform.position = pivotPosition + cameraOffset;
+        Vector3 desiredPosition =
+            pivotPosition +
+            fullCameraOffset;
 
-        transform.rotation = rotation;
+        Vector3 direction =
+            desiredPosition -
+            pivotPosition;
+
+        float desiredDistance =
+            direction.magnitude;
+
+        direction.Normalize();
+
+        float targetDistance =
+            desiredDistance;
+
+        RaycastHit hit;
+
+        if (Physics.SphereCast(
+            pivotPosition,
+            collisionRadius,
+            direction,
+            out hit,
+            desiredDistance,
+            collisionMask,
+            QueryTriggerInteraction.Ignore))
+        {
+            targetDistance =
+                Mathf.Max(
+                    hit.distance -
+                    collisionPadding,
+                    0.3f
+                );
+        }
+
+        currentDistance =
+            Mathf.Lerp(
+                currentDistance,
+                targetDistance,
+                Time.deltaTime *
+                collisionSmoothSpeed
+            );
+
+        transform.position =
+            pivotPosition +
+            direction *
+            currentDistance;
+
+        transform.rotation =
+            rotation;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (player == null)
+            return;
+
+        Vector3 pivotPosition =
+            player.position +
+            Vector3.up * height;
+
+        Gizmos.color =
+            Color.cyan;
+
+        Gizmos.DrawWireSphere(
+            pivotPosition,
+            collisionRadius
+        );
     }
 }
