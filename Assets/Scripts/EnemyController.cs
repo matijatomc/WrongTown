@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(HealthSystem))]
@@ -19,6 +20,10 @@ public class EnemyController : MonoBehaviour
     public float fireRate = 1.2f;
     public float damage = 10f;
     public float shootRayHeight = 1f;
+    public string shootTrigger = "Shoot";
+    public float shootDelay = 0.35f;
+
+    public bool useAnimationEvent = false;
 
     [Header("Audio")]
     public AudioClip shootSound;
@@ -31,6 +36,7 @@ public class EnemyController : MonoBehaviour
     private Rigidbody rb;
     private HealthSystem health;
     private float fireCooldown;
+    private bool isFiring = false;
 
     private enum State { Idle, Chasing, Shooting, Dead }
     private State currentState = State.Idle;
@@ -79,7 +85,7 @@ public class EnemyController : MonoBehaviour
         else
             currentState = State.Shooting;
 
-        // Trigger okidamo SAMO na promjeni stanja, ne svaki frame.
+        // SpottedPlayer okidamo SAMO na promjeni stanja, ne svaki frame.
         if (currentState != previousState)
         {
             if (currentState != State.Idle && animator != null)
@@ -94,13 +100,11 @@ public class EnemyController : MonoBehaviour
         if (currentState == State.Shooting)
         {
             FaceTarget();
-            if (fireCooldown <= 0f)
-            {
-                Shoot();
-                fireCooldown = fireRate;
 
-                if (audioSource != null && shootSound != null)
-                    audioSource.PlayOneShot(shootSound, shootVolume);
+            if (fireCooldown <= 0f && !isFiring)
+            {
+                fireCooldown = fireRate;
+                StartCoroutine(ShootRoutine());
             }
         }
     }
@@ -122,6 +126,52 @@ public class EnemyController : MonoBehaviour
         }
     }
 
+    // ---------- SHOOTING ----------
+
+        private IEnumerator ShootRoutine()
+    {
+        isFiring = true;
+
+        if (animator != null && !string.IsNullOrEmpty(shootTrigger))
+            animator.SetTrigger(shootTrigger);
+
+        // Zvuk krece u istom frameu kao i animacija.
+        if (audioSource != null && shootSound != null)
+            audioSource.PlayOneShot(shootSound, shootVolume);
+
+        if (!useAnimationEvent)
+        {
+            yield return new WaitForSeconds(shootDelay);
+
+            if (!isDead)
+                FireShot();
+        }
+
+        isFiring = false;
+    }
+
+    private void FireShot()
+    {
+        if (player == null) return;
+
+        float distance = Vector3.Distance(transform.position, player.position);
+
+        if (distance > shootRange || !HasLineOfSight())
+            return;
+
+        Vector3 origin = transform.position + Vector3.up * shootRayHeight;
+        Vector3 targetPoint = player.position + Vector3.up * shootRayHeight;
+        Vector3 dir = (targetPoint - origin).normalized;
+
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, shootRange))
+        {
+            HealthSystem targetHealth = hit.collider.GetComponent<HealthSystem>();
+
+            if (targetHealth != null)
+                targetHealth.TakeDamage(damage);
+        }
+    }
+
     // ---------- DEATH ----------
 
     private void HandleDeath()
@@ -131,14 +181,20 @@ public class EnemyController : MonoBehaviour
         isDead = true;
         currentState = State.Dead;
 
+        // Prekini hitac koji je mozda u tijeku.
+        StopAllCoroutines();
+        isFiring = false;
+
         if (animator != null)
         {
-            // Da ga SpottedPlayer ne izvuče natrag iz death statea.
             animator.ResetTrigger("SpottedPlayer");
+
+            if (!string.IsNullOrEmpty(shootTrigger))
+                animator.ResetTrigger(shootTrigger);
+
             animator.SetTrigger("Dead");
         }
 
-        // Zaustavi kretanje.
         if (rb != null)
         {
             rb.velocity = Vector3.zero;
@@ -146,14 +202,12 @@ public class EnemyController : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        // Da igrač ne puca u leš i da ga ne gura.
         if (disableCollidersOnDeath)
         {
             foreach (Collider col in GetComponentsInChildren<Collider>())
                 col.enabled = false;
         }
 
-        // Prestani izvršavati Update/FixedUpdate.
         enabled = false;
     }
 
@@ -161,6 +215,8 @@ public class EnemyController : MonoBehaviour
 
     private bool HasLineOfSight()
     {
+        if (player == null) return false;
+
         Vector3 origin = transform.position + Vector3.up * shootRayHeight;
         Vector3 targetPoint = player.position + Vector3.up * shootRayHeight;
         Vector3 dir = targetPoint - origin;
@@ -175,6 +231,7 @@ public class EnemyController : MonoBehaviour
     {
         Vector3 lookDirection = player.position - transform.position;
         lookDirection.y = 0f;
+
         if (lookDirection != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
@@ -182,24 +239,11 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    private void Shoot()
-    {
-        Vector3 origin = transform.position + Vector3.up * shootRayHeight;
-        Vector3 targetPoint = player.position + Vector3.up * shootRayHeight;
-        Vector3 dir = (targetPoint - origin).normalized;
-
-        if (Physics.Raycast(origin, dir, out RaycastHit hit, shootRange))
-        {
-            HealthSystem targetHealth = hit.collider.GetComponent<HealthSystem>();
-            if (targetHealth != null)
-                targetHealth.TakeDamage(damage);
-        }
-    }
-
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, detectionRange);
+
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(transform.position, shootRange);
     }

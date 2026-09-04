@@ -878,9 +878,12 @@ MonoBehaviour:
   detectionRange: 15
   shootRange: 10
   moveSpeed: 4
-  fireRate: 1.2
+  fireRate: 2.2
   damage: 10
   shootRayHeight: 1
+  shootTrigger: Shoot
+  shootDelay: 0.8
+  useAnimationEvent: 0
   shootSound: {fileID: 8300000, guid: 015327b78a320cb4ba5de2fd2402c9af, type: 3}
   audioSource: {fileID: 1176096717093898986}
   shootVolume: 1
