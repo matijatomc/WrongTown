@@ -12,14 +12,13 @@ public class Shooting : MonoBehaviour
     public float shootRange = 100f;
     public float damage = 25f;
 
+    [Header("Feedback")]
+    public HitMarkerUI hitMarkerUI;
+
     [Header("Timing")]
-    [Tooltip("Koliko sekundi nakon klika se metak stvarno ispali. " +
-             "Postavi na trenutak u animaciji kad lik nanišani.")]
     public float shootDelay = 0.5f;
 
     [Header("Audio")]
-    [Tooltip("Zvuk pucnja - sada se pušta ovdje da bude sinkroniziran " +
-             "s hitscanom. Ukloni shootSound iz PlayerControllera.")]
     public AudioClip shootSound;
     public AudioSource audioSource;
     [Range(0f, 1f)]
@@ -112,10 +111,17 @@ public class Shooting : MonoBehaviour
             HealthSystem healthSystem =
                 hit.collider.GetComponentInParent<HealthSystem>();
 
-            if (healthSystem != null &&
-                hit.collider.GetComponentInParent<EnemyController>() != null)
+            EnemyController enemy =
+                hit.collider.GetComponentInParent<EnemyController>();
+
+            if (healthSystem != null && enemy != null)
             {
                 healthSystem.TakeDamage(damage);
+
+                if (hitMarkerUI != null)
+                {
+                    hitMarkerUI.ShowHit();
+                }
             }
             else
             {
