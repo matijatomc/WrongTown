@@ -140,9 +140,11 @@ public class EnemyController : MonoBehaviour
         else if (distanceToPlayer > shootRange)
         {
             currentState = State.Chasing;
+            animator.SetBool(walkingBool,true);
         }
         else
         {
+            animator.SetBool(walkingBool,false);
             currentState = State.Shooting;
         }
 
@@ -376,6 +378,7 @@ public class EnemyController : MonoBehaviour
 
     private void ChasePlayer()
     {
+        animator.SetBool(walkingBool,true);
         if (player == null)
             return;
 
